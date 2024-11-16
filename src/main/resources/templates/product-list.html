@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Produits</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    .form-container {
+      margin-bottom: 20px;
+    }
+    .form-container input {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Gestion des Produits</h1>
+
+  <div class="form-container">
+    <h3>Ajouter / Modifier un Produit</h3>
+    <form id="productForm">
+      <input type="hidden" id="productId" />
+      <input type="text" id="productName" placeholder="Nom du produit" required />
+      <input type="text" id="productDescription" placeholder="Description du produit" required />
+      <input type="number" id="productPrice" placeholder="Prix" required />
+      <button type="submit">Enregistrer</button>
+    </form>
+  </div>
+
+  <h3>Liste des Produits</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nom</th>
+        <th>Description</th>
+        <th>Prix</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="productTableBody">
+      <!-- Les produits seront affichés ici -->
+    </tbody>
+  </table>
+
+  <script>
+    const apiUrl = 'http://localhost:8080/api/products'; // Remplacez avec votre URL API
+
+    // Charger les produits
+    function loadProducts() {
+      fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+          const tableBody = document.getElementById('productTableBody');
+          tableBody.innerHTML = '';
+          data.forEach(product => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${product.id}</td>
+              <td>${product.name}</td>
+              <td>${product.description}</td>
+              <td>${product.price}</td>
+              <td>
+                <button onclick="editProduct(${product.id}, '${product.name}', '${product.description}', ${product.price})">Modifier</button>
+                <button onclick="deleteProduct(${product.id})">Supprimer</button>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
+        })
+        .catch(error => console.error('Erreur lors du chargement des produits:', error));
+    }
+
+    // Ajouter ou Modifier un produit
+    document.getElementById('productForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const id = document.getElementById('productId').value;
+      const name = document.getElementById('productName').value;
+      const description = document.getElementById('productDescription').value;
+      const price = document.getElementById('productPrice').value;
+
+      const product = { name, description, price: parseFloat(price) };
+
+      if (id) {
+        // Modifier un produit
+        fetch(`${apiUrl}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(product)
+        })
+          .then(() => {
+            loadProducts();
+            resetForm();
+          })
+          .catch(error => console.error('Erreur lors de la modification du produit:', error));
+      } else {
+        // Ajouter un produit
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(product)
+        })
+          .then(() => {
+            loadProducts();
+            resetForm();
+          })
+          .catch(error => console.error('Erreur lors de l\'ajout du produit:', error));
+      }
+    });
+
+    // Préparer le formulaire pour la modification
+    function editProduct(id, name, description, price) {
+      document.getElementById('productId').value = id;
+      document.getElementById('productName').value = name;
+      document.getElementById('productDescription').value = description;
+      document.getElementById('productPrice').value = price;
+    }
+
+    // Supprimer un produit
+    function deleteProduct(id) {
+      fetch(`${apiUrl}/${id}`, { method: 'DELETE' })
+        .then(() => loadProducts())
+        .catch(error => console.error('Erreur lors de la suppression du produit:', error));
+    }
+
+    // Réinitialiser le formulaire
+    function resetForm() {
+      document.getElementById('productId').value = '';
+      document.getElementById('productName').value = '';
+      document.getElementById('productDescription').value = '';
+      document.getElementById('productPrice').value = '';
+    }
+
+    // Charger les produits au démarrage
+    loadProducts();
+  </script>
+
+</body>
+</html>
